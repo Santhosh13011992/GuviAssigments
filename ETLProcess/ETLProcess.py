@@ -1,3 +1,6 @@
+# ============================
+# 1. Importing Libraries
+# ============================
 import io
 import os
 import glob
@@ -8,10 +11,15 @@ import asyncio
 import aiofiles
 import configparser
 
-# Load configuration
+# ============================
+# 2. Configuration Loading
+# ============================
 config = configparser.ConfigParser()
 config.read('config.ini')
 
+# ============================
+# 3. Logger Class
+# ============================
 class Logger:
     """Singleton Logger class to log messages to a file."""
     _instance = None
@@ -28,6 +36,9 @@ class Logger:
         with open(log_file, 'a') as f:
             f.write(f"{datetime.now()}: {msg}\n")
 
+# ============================
+# 4. Logging Decorator
+# ============================
 def log_function(context=None):
     """Decorator to log the start and completion of an asynchronous function with context."""
     def decorator(func):
@@ -41,6 +52,9 @@ def log_function(context=None):
         return wrapper
     return decorator
 
+# ============================
+# 5. Data Extractors
+# ============================
 class DataExtractor:
     """Base class for data extractors."""
     async def extract(self, path):
@@ -71,6 +85,9 @@ class XMLExtractor(DataExtractor):
         """Extract data from an XML file."""
         return pd.DataFrame([{child.tag: child.text for child in elem} for elem in ET.parse(path).getroot()])
 
+# ============================
+# 6. Data Extractor Factory
+# ============================
 class DataExtractorFactory:
     """Factory class to create data extractors based on file type."""
     @staticmethod
@@ -83,24 +100,24 @@ class DataExtractorFactory:
         }
         return extractors.get(ft, lambda: ValueError("Unsupported file type"))
 
+# ============================
+# 7. ETL Process Class
+# ============================
 class ETLProcess:
     """Class to handle the ETL (Extract, Transform, Load) process."""
     def __init__(self, output_file):
         """Initialize the ETL process with the output file path."""
         self.output_file = output_file
 
-    @log_function(context="Transforming data")
-    async def transform_data(self, df):
-        """Transform the data by converting height and weight to metric units."""
-        df[['height', 'weight']] = df[['height', 'weight']].apply(pd.to_numeric, errors='coerce').multiply([0.0254, 0.453592])
-        return df[['name', 'height', 'weight']]
+    @log_function(context="ETL Process")
+    async def run(self):
+        """Run the ETL process on all files in the specified directory."""
+        files = glob.glob('./unzipped_folder/*')
+        tasks = [self.process_file(file) for file in files]
+        results = await asyncio.gather(*tasks)
+        await self.load_data(await self.transform_data(pd.concat(results, ignore_index=True)))
 
-    @log_function(context="Loading data")
-    async def load_data(self, df):
-        """Load the transformed data into a CSV file."""
-        os.makedirs(os.path.dirname(self.output_file), exist_ok=True)
-        await asyncio.to_thread(df.to_csv, self.output_file, index=False)
-
+    
     @log_function(context="Processing file")
     async def process_file(self, file: str) -> pd.DataFrame:
         """Process a single file by extracting its data."""
@@ -115,14 +132,22 @@ class ETLProcess:
             Logger().log(f"Error processing file {file}: {e}")
         return pd.DataFrame()
 
-    @log_function(context="ETL Process")
-    async def run(self):
-        """Run the ETL process on all files in the specified directory."""
-        files = glob.glob('./unzipped_folder/*')
-        tasks = [self.process_file(file) for file in files]
-        results = await asyncio.gather(*tasks)
-        await self.load_data(await self.transform_data(pd.concat(results, ignore_index=True)))
+    @log_function(context="Transforming data")
+    async def transform_data(self, df):
+        """Transform the data by converting height and weight to metric units."""
+        df[['height', 'weight']] = df[['height', 'weight']].apply(pd.to_numeric, errors='coerce').multiply([0.0254, 0.453592])
+        return df[['name', 'height', 'weight']]
 
+    @log_function(context="Loading data")
+    async def load_data(self, df):
+        """Load the transformed data into a CSV file."""
+        os.makedirs(os.path.dirname(self.output_file), exist_ok=True)
+        await asyncio.to_thread(df.to_csv, self.output_file, index=False)
+
+
+# ============================
+# 8. Main Execution
+# ============================
 if __name__ == "__main__":
     output_file_path = os.path.join(os.getcwd(), config.get('Output', 'output_file'))
     asyncio.run(ETLProcess(output_file=output_file_path).run())
