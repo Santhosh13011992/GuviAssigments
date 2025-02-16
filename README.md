@@ -15,7 +15,7 @@ This project implements an ETL process to extract data from CSV, JSON, and XML f
 - Python 3.7+
 - Required libraries: `pandas`, `aiofiles`, `configparser`
 
-##Configuration
+## Configuration
 Create a config.ini file in the project root with the following structure:
 
 [Logging]
