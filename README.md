@@ -5,9 +5,24 @@
 ## Overview
 This project implements an ETL process to extract data from CSV, JSON, and XML files, transform it into a standardized format, and load it into a CSV file for further analysis.
 
+## Features
+- Asynchronous data extraction using `aiofiles`
+- Support for multiple file formats: CSV, JSON, XML
+- Logging of operations for better traceability
+- Configurable output file path
+
 ## Requirements
-- Python 3.x
-- Libraries: pandas, glob, xml.etree.ElementTree, datetime, aiofiles, asyncio, io, os
+- Python 3.7+
+- Required libraries: `pandas`, `aiofiles`, `configparser`
+
+##Configuration
+Create a config.ini file in the project root with the following structure:
+
+[Logging]
+log_file = path/to/logfile.log
+
+[Output]
+output_file = path/to/outputfile.csv  
 
 ## Steps to Execute
 1. **Gather Data Files**
