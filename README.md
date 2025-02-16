@@ -7,7 +7,7 @@ This project implements an ETL process to extract data from CSV, JSON, and XML f
 
 ## Requirements
 - Python 3.x
-- Libraries: pandas, glob, xml.etree.ElementTree, datetime
+- Libraries: pandas, glob, xml.etree.ElementTree, datetime, aiofiles, asyncio, io, os
 
 ## Steps to Execute
 1. **Gather Data Files**
